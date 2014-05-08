@@ -1,0 +1,79 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+	{{ block.super }}
+
+    <style type="text/css">
+        div#left_col {
+            float: left;
+            width: 45%;
+        }
+        div#right_col {
+        	float: right;
+            width: 45%;
+        }
+
+    </style>
+
+
+{% endblock %}
+
+{% block bodyclass %}{{ opts.app_label }}-{{ opts.object_name.lower }} change-form{% endblock %}
+
+{% if not is_popup %}
+	{% block breadcrumbs %}
+	<div class="breadcrumbs">
+		<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+		&rsaquo; <a href="..">Cms_redirects</a>
+		&rsaquo; CMS Redirects
+	</div>
+	{% endblock %}
+{% endif %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+	
+	<div id="left_col">
+		<h1>Upload a redirects CSV</h1>
+	 	<form enctype="multipart/form-data" action="." method="post">
+		<fieldset class="module aligned">
+			<div class="form-row {% if form.csv_file.errors %}errors{% endif %}">
+				{% csrf_token %}
+				{{ form.csv_file.errors }}
+			    <label>{% trans "Upload a CSV" %}</label>
+			    {{ form.csv_file }}
+			</div>
+			<input class="default" type="submit" value="{% trans 'Upload' %}" />
+		</fieldset>
+		{% if feedback %}
+			<fieldset class="module aligned">
+				{% if file_has_errors %}
+					<ul class="errorlist">
+						<li>{{ feedback }}</li>
+					</ul>
+				{% else %}
+					<p>{{ feedback }}</p>
+				{% endif %}
+			</fieldset>
+		{% endif %}
+	</div>
+	<div id="right_col">
+		<h1>{% trans "Help" %}</h1>
+		{% blocktrans %}
+			<p>On this page you can bulk-upload redirects, formatted in a CSV file.</p>
+			<p>The CSV file should contain 3 columns:</p>
+			<ol>
+				<li>Old Url: the URL to redirect from.</li>
+				<li>New Url: the URL to redirect to.</li>
+				<li>Response Code: either 301 (permanent redirect) or 302 (temporary redirect). If
+				not specified, defaults to 301.</li>
+			</ol>
+			<p>The first row of the CSV should look like this:</p>
+			<pre>"Old Url","New Url","Response Code"</pre>
+		{% endblocktrans %}
+	</div>
+
+
+{% endblock %}
