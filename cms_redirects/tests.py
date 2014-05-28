@@ -3,6 +3,8 @@ from django.contrib.sites.models import Site
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
+from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 
 from cms.api import create_page, publish_page
 from cms_redirects.models import CMSRedirect
@@ -92,3 +94,102 @@ class TestRedirects(TestCase):
         response = self.client.get('/301_page.php?this=is&a=query&string')
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response._headers['location'][1], 'http://testserver/')
+
+
+@override_settings(APPEND_SLASH=False)
+class TestValidators(TestCase):
+
+    """Redirects are sanity-checked before they get saved."""
+
+    def setUp(self):
+
+        self.site = Site.objects.get_current()
+
+        self.page = create_page(title='Hello world!',
+                                # TODO we're assuming here that at least one template exists
+                                # in the settings file.
+                                template=settings.CMS_TEMPLATES[0][0],
+                                language='en'
+                                )
+
+        self.user = User.objects.create_user('test_user', 'test@example.com', 'test_user')
+        self.user.is_superuser = True
+        self.user.save()
+
+        publish_page(self.page, self.user)
+
+    def test_path_or_page(self):
+        """The redirect target should be a path or a page."""
+        redirect = CMSRedirect(site=self.site,
+                               old_path='/old_path/',
+                               new_path='/new_path/',
+                               page=self.page)
+        self.assertRaisesMessage(ValidationError,
+                                 'You can redirect to either a CMS page, or to a path, but not both.',
+                                 redirect.full_clean)
+
+    def test_loop_to_path(self):
+        """Avoid infinite loops."""
+        redirect = CMSRedirect(site=self.site,
+                               old_path='/old_path/',
+                               new_path='/old_path/')
+        self.assertRaisesMessage(ValidationError,
+                                 'You cannot redirect back to same path.',
+                                 redirect.full_clean)
+
+    def test_loop_to_page(self):
+        """Avoid infinite loops."""
+
+        # The django-cms always sets the first page created as having path '/'.
+        # This does not matter in other tests, but here we want a 'real' url so
+        # the easiest thing to do is to create a second page for our test.
+        self.page2 = create_page(title='Loop to page',
+                                 template=settings.CMS_TEMPLATES[0][0],
+                                 language='en'
+                                 )
+        publish_page(self.page2, self.user)
+
+        redirect = CMSRedirect(site=self.site,
+                               old_path='/loop-to-page',
+                               page=self.page2)
+        self.assertRaisesMessage(ValidationError,
+                                 'You cannot redirect back to same path.',
+                                 redirect.full_clean)
+
+    def test_not_homepage(self):
+        """Do not allow admin users to redirect the site's homepage - could cause a lot of pain!"""
+        redirect = CMSRedirect(site=self.site,
+                               old_path='/',
+                               new_path='/new_path/')
+        self.assertRaisesMessage(ValidationError,
+                                 "You cannot redirect the site's homepage.",
+                                 redirect.full_clean)
+
+    def test_not_admin(self):
+        """Do not allow redirecting to/from pages in the admin site."""
+        admin_root = reverse('admin:index')
+        redirect = CMSRedirect(site=self.site,
+                               old_path=admin_root,
+                               new_path='/new_path/')
+
+        self.assertRaisesMessage(ValidationError,
+                                 "You cannot redirect to or from the admin site.",
+                                 redirect.full_clean)
+
+        redirect.old_path = admin_root + 'some_page/'
+        self.assertRaisesMessage(ValidationError,
+                                 "You cannot redirect to or from the admin site.",
+                                 redirect.full_clean)
+
+        redirect = CMSRedirect(site=self.site,
+                               old_path='/old_path/',
+                               new_path=admin_root)
+
+        self.assertRaisesMessage(ValidationError,
+                                 "You cannot redirect to or from the admin site.",
+                                 redirect.full_clean)
+
+        redirect.new_path = admin_root + 'some_page/'
+        self.assertRaisesMessage(ValidationError,
+                                 "You cannot redirect to or from the admin site.",
+                                 redirect.full_clean)

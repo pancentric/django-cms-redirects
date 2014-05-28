@@ -1,9 +1,10 @@
 from django.db import models
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext_lazy as _
-from cms.models.fields import PageField
+from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 
-from cms.models import Page
+from cms.models.fields import PageField
 
 RESPONSE_CODES = (
     ('301', '301'),
@@ -11,19 +12,35 @@ RESPONSE_CODES = (
 )
 
 
+def old_path_validator(value):
+    """Do not allow admin users to redirect away from the site's homepage - a simple typo could
+    bring down the whole site."""
+    if value == '/':
+        raise ValidationError(_("You cannot redirect the site's homepage."))
+
+
+def not_admin_validator(value):
+    """Avoid redirecting to/from the admin - there's no logical reason to do this, and you could break
+    the whole admin."""
+    admin_root = reverse('admin:index')
+    if value and value.startswith(admin_root):
+        raise ValidationError(_("You cannot redirect to or from the admin site."))
+
+
 class CMSRedirect(models.Model):
     page = PageField(verbose_name=_("page"),
                      blank=True,
-                     null=True,
-                     help_text=_("A link to a page has priority over a text link."))
+                     null=True)
     site = models.ForeignKey(Site)
     old_path = models.CharField(_('redirect from'),
                                 max_length=200,
                                 db_index=True,
+                                validators=[old_path_validator, not_admin_validator],
                                 help_text=_("This should be an absolute path, excluding the domain name. Example: '/events/search/'."))
     new_path = models.CharField(_('redirect to'),
                                 max_length=200,
                                 blank=True,
+                                validators=[not_admin_validator],
                                 help_text=_("This can be either an absolute path (as above) or a full URL starting with 'http://'."))
     response_code = models.CharField(_('response code'),
                                      max_length=3,
@@ -51,3 +68,13 @@ class CMSRedirect(models.Model):
 
     def __unicode__(self):
         return "%s ---> %s" % (self.old_path, self.new_path)
+
+    def clean(self):
+        if self.new_path and self.page:
+            raise ValidationError(
+                _('You can redirect to either a CMS page, or to a path, but not both.'))
+
+        # Avoid infinite loops.
+        if self.old_path == self.new_path or \
+            (self.page and self.old_path == self.page.get_absolute_url()):
+            raise ValidationError(_('You cannot redirect back to same path.'))
