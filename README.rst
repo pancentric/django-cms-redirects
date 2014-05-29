@@ -23,6 +23,7 @@ Add the following to your installed apps:
 	    'cms',
 	    'cms_redirects',
         'taggit',
+        'taggit_autosuggest',
 	)
 
 If you are using South (rather than Django 1.7s built-in migration system), you should add this setting:
@@ -34,7 +35,12 @@ If you are using South (rather than Django 1.7s built-in migration system), you 
 
 Run a ``python manage.py migrate``.
 
-Finally, add 'cms_redirects.middleware.RedirectFallbackMiddleware' to your MIDDLEWARE_CLASSES setting.
+Add 'cms_redirects.middleware.RedirectFallbackMiddleware' to your MIDDLEWARE_CLASSES setting.
+
+Add the following line to your project's urls.py file:
+
+::
+	(r'^taggit_autosuggest/', include('taggit_autosuggest.urls')),
 
 Usage
 =============

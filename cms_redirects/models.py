@@ -5,7 +5,7 @@ from cms.models.fields import PageField
 
 from cms.models import Page
 
-from taggit.managers import TaggableManager
+from taggit_autosuggest.managers import TaggableManager
 
 RESPONSE_CODES = (
     ('301', '301'),

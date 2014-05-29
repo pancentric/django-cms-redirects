@@ -8,6 +8,7 @@ install_requires = [
     'django',
     'django-cms',
     'django-taggit>=0.12',
+    'django-taggit-autosuggest>=0.2.3',
 ]
 
 setup(
