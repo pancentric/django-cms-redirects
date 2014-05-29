@@ -92,3 +92,20 @@ class TestRedirects(TestCase):
         response = self.client.get('/301_page.php?this=is&a=query&string')
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response._headers['location'][1], 'http://testserver/')
+
+    def test_inactive(self):
+        """Same as 'test_301_page_redirect' but redirect is inactive."""
+        redirect = CMSRedirect(site=self.site,
+                               old_path='/301_page.php',
+                               page=self.page,
+                               active=True)
+        redirect.save()
+
+        response = self.client.get('/301_page.php')
+        self.assertEqual(response.status_code, 301)
+
+        redirect.active = False
+        redirect.save()
+
+        response = self.client.get('/301_page.php')
+        self.assertEqual(response.status_code, 404)

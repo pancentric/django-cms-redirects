@@ -30,6 +30,8 @@ class CMSRedirect(models.Model):
                                      choices=RESPONSE_CODES,
                                      default=RESPONSE_CODES[0][0],
                                      help_text=_("This is the http response code returned if a destination is specified. If no destination is specified the response code will be 410."))
+    active = models.BooleanField(default=True,
+                                 help_text=_('You can untick this option if you want to create a redirect, but not use it immediately.'))
 
     def page_site(self):
         if self.page:

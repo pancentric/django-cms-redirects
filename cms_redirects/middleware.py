@@ -5,11 +5,12 @@ from django.conf import settings
 
 def get_redirect(old_path):
     try:
-        r = CMSRedirect.objects.get(site__id__exact=settings.SITE_ID,
-                                    old_path=old_path)
+        redirect = CMSRedirect.objects.get(site__id__exact=settings.SITE_ID,
+                                           old_path=old_path,
+                                           active=True)
     except CMSRedirect.DoesNotExist:
-        r = None
-    return r
+        redirect = None
+    return redirect
 
 
 def remove_slash(path):

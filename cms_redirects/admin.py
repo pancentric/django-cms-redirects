@@ -14,6 +14,10 @@ class CMSRedirectAdmin(admin.ModelAdmin):
         ('Destination', {
             "fields": ('new_path', 'page', 'response_code',)
         }),
+        ('State', {
+            'classes': ('collapse',),
+            "fields": ('active',)
+        }),
     ]
 
 admin.site.register(CMSRedirect, CMSRedirectAdmin)
