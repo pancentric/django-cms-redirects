@@ -1,10 +1,50 @@
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
+from django.contrib.admin import SimpleListFilter
+
+from taggit.models import TaggedItem
+
 from cms_redirects.models import CMSRedirect
 
 
+class TaggitListFilter(SimpleListFilter):
+
+    """
+    A custom filter class that can be used to filter by taggit tags in the admin.
+    Taken from https://djangosnippets.org/snippets/2807/
+    """
+
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('tags')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'tag'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each tuple is the coded value
+        for the option that will appear in the URL query. The second element is the
+        human-readable name for the option that will appear in the right sidebar.
+        """
+        list = []
+        tags = TaggedItem.tags_for(model_admin.model)
+        for tag in tags:
+            list.append((tag.name, _(tag.name)))
+        return list
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value provided in the query
+        string and retrievable via `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(tags__name__in=[self.value()])
+
+
 class CMSRedirectAdmin(admin.ModelAdmin):
-    list_display = ('old_path', 'new_path', 'page', 'page_site', 'site', 'actual_response_code',)
-    list_filter = ('site',)
+    list_display = ('old_path',)
+    list_filter = ('site', TaggitListFilter)
     search_fields = ('old_path', 'new_path', 'page__title_set__title')
     radio_fields = {'site': admin.VERTICAL}
     fieldsets = [
@@ -13,6 +53,10 @@ class CMSRedirectAdmin(admin.ModelAdmin):
         }),
         ('Destination', {
             "fields": ('new_path', 'page', 'response_code',)
+        }),
+        ('Extras', {
+            'classes': ('collapse',),
+            "fields": ('tags',)
         }),
     ]
 

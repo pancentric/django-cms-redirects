@@ -92,3 +92,34 @@ class TestRedirects(TestCase):
         response = self.client.get('/301_page.php?this=is&a=query&string')
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response._headers['location'][1], 'http://testserver/')
+
+
+class TestTagging(TestCase):
+
+    """Quick check that tagging is working."""
+
+    def setUp(self):
+
+        self.site = Site.objects.get_current()
+
+    def test_301_page_redirect(self):
+        redirect1 = CMSRedirect(site=self.site,
+                                old_path='/old_path1/',
+                                new_path='/new_path1/',)
+        redirect1.save()
+        redirect1.tags.add('Red Leicester', 'Tilsit', 'Caerphilly')
+
+        redirect2 = CMSRedirect(site=self.site,
+                                old_path='/old_path2/',
+                                new_path='/new_path2/',)
+        redirect2.save()
+        redirect2.tags.add('Caerphilly')
+
+        self.assertQuerysetEqual(CMSRedirect.objects.filter(tags__name__in=['Tilsit']),
+                                 ['<CMSRedirect: /old_path1/ ---> /new_path1/>'],
+                                 ordered=False)
+
+        self.assertQuerysetEqual(CMSRedirect.objects.filter(tags__name__in=['Caerphilly']),
+                                 ['<CMSRedirect: /old_path1/ ---> /new_path1/>',
+                                  '<CMSRedirect: /old_path2/ ---> /new_path2/>'],
+                                 ordered=False)

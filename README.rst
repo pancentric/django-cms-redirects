@@ -15,20 +15,24 @@ To get started simply install using ``pip``:
 ::
     pip install django-cms-redirects
 
-Add ``cms_redirects`` to your installed apps and ``syncdb``.
+Add the following to your installed apps:
 
-Your installed apps should look something like this:
 ::
 	INSTALLED_APPS = (
-	    'django.contrib.auth',
-	    'django.contrib.contenttypes',
-	    'django.contrib.sessions',
-	    'django.contrib.sites',
-	    'django.contrib.messages',
-	    'django.contrib.admin',
+		...
 	    'cms',
 	    'cms_redirects',
+        'taggit',
 	)
+
+If you are using South (rather than Django 1.7s built-in migration system), you should add this setting:
+
+::
+    SOUTH_MIGRATION_MODULES = {
+        'taggit': 'taggit.south_migrations',
+    }
+
+Run a ``python manage.py migrate``.
 
 Finally, add 'cms_redirects.middleware.RedirectFallbackMiddleware' to your MIDDLEWARE_CLASSES setting.
 

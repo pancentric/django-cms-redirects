@@ -5,6 +5,8 @@ from cms.models.fields import PageField
 
 from cms.models import Page
 
+from taggit.managers import TaggableManager
+
 RESPONSE_CODES = (
     ('301', '301'),
     ('302', '302'),
@@ -51,3 +53,5 @@ class CMSRedirect(models.Model):
 
     def __unicode__(self):
         return "%s ---> %s" % (self.old_path, self.new_path)
+
+    tags = TaggableManager()

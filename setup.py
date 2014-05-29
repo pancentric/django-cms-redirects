@@ -7,6 +7,7 @@ install_requires = [
     'setuptools',
     'django',
     'django-cms',
+    'django-taggit>=0.12',
 ]
 
 setup(
