@@ -54,4 +54,4 @@ class CMSRedirect(models.Model):
     def __unicode__(self):
         return "%s ---> %s" % (self.old_path, self.new_path)
 
-    tags = TaggableManager()
+    tags = TaggableManager(blank=True)
