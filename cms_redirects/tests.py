@@ -165,6 +165,15 @@ class TestValidators(TestCase):
                                  "You cannot redirect the site's homepage.",
                                  redirect.full_clean)
 
+    def test_start_slash(self):
+        """The old path should always start with a slash."""
+        redirect = CMSRedirect(site=self.site,
+                               old_path='old_path',
+                               new_path='/new_path/')
+        self.assertRaisesMessage(ValidationError,
+                                 "The old path should always start with a slash.",
+                                 redirect.full_clean)
+
     def test_not_admin(self):
         """Do not allow redirecting to/from pages in the admin site."""
         admin_root = reverse('admin:index')

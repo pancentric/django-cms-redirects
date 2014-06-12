@@ -17,6 +17,8 @@ def old_path_validator(value):
     bring down the whole site."""
     if value == '/':
         raise ValidationError(_("You cannot redirect the site's homepage."))
+    if not value.startswith('/'):
+        raise ValidationError(_("The old path should always start with a slash."))
 
 
 def not_admin_validator(value):
