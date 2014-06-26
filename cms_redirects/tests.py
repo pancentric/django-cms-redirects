@@ -156,6 +156,27 @@ class TestValidators(TestCase):
                                  'You cannot redirect back to same path.',
                                  redirect.full_clean)
 
+    def test_redirect_to_redirect(self):
+        """A redirect cannot point to another redirect."""
+        redirect1 = CMSRedirect(site=self.site,
+                                old_path='/path1/',
+                                new_path='/path2/')
+        redirect1.save()
+
+        redirect2 = CMSRedirect(site=self.site,
+                                old_path='/path2/',
+                                new_path='/path3/')
+        self.assertRaisesMessage(ValidationError,
+                                 'Another redirect already points to /path2/',
+                                 redirect2.full_clean)
+
+        redirect2 = CMSRedirect(site=self.site,
+                                old_path='/path3/',
+                                new_path='/path1/')
+        self.assertRaisesMessage(ValidationError,
+                                 '/path1/ would point to another redirect.',
+                                 redirect2.full_clean)
+
     def test_not_homepage(self):
         """Do not allow admin users to redirect the site's homepage - could cause a lot of pain!"""
         redirect = CMSRedirect(site=self.site,

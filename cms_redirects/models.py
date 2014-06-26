@@ -80,3 +80,16 @@ class CMSRedirect(models.Model):
         if self.old_path == self.new_path or \
             (self.page and self.old_path == self.page.get_absolute_url()):
             raise ValidationError(_('You cannot redirect back to same path.'))
+
+        # A redirect should not point to another redirect.
+        # 1. It's not good for SEO.
+        # 2. It could lead to nasty loops.
+        chaining = CMSRedirect.objects.filter(new_path=self.old_path).exclude(id=self.id)
+        if chaining:
+            raise ValidationError(
+                _('Another redirect already points to %(path)s') % {'path': self.old_path})
+
+        chaining = CMSRedirect.objects.filter(old_path=self.new_path).exclude(id=self.id)
+        if chaining:
+            raise ValidationError(
+                _('%(path)s would point to another redirect.') % {'path': self.new_path})
